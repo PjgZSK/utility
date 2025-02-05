@@ -18,9 +18,9 @@ int main()
     sprintf(str + 2, "%c%c", *p4, *(p4 + 1));
 
     if (0 == strcmp("UNIX", str))
-        printf("big-endianess,");
+        printf("big-endianness,");
     else
-        printf("little-endianess,");
+        printf("little-endianness,");
     printf("%s", str);
 
     return 0;
