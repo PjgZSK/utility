@@ -3,6 +3,7 @@ using UnityEditor;
 using System.Text;
 using UnityEditor.SceneManagement;
 using System.IO;
+using static Tea.Log.Print;
 
 /// <summary>
 /// editor, editorWindow, 
@@ -25,7 +26,7 @@ public static class LocalEditorTool
         GUIUtility.systemCopyBuffer = path;
 
         Debug.Log($"路径复制成功: {path}, {go.name}");
-    }    
+    }
 
     [MenuItem("GameObject/CopyPath", true)]
     static bool ValidateCopyPath()
@@ -33,7 +34,7 @@ public static class LocalEditorTool
         if (Selection.activeGameObject == null) return false;
 
         var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
-        return prefabStage != null && prefabStage.IsPartOfPrefabContents(Selection.activeGameObject); 
+        return prefabStage != null && prefabStage.IsPartOfPrefabContents(Selection.activeGameObject);
     }
 
     static string GetPathWithoutRoot(Transform target, Transform root)
@@ -61,7 +62,7 @@ public static class LocalEditorTool
         if (obj == null) return;
 
         var path = AssetDatabase.GetAssetPath(obj);
-        var guids = AssetDatabase.FindAssets("t:Sprite", new[]{ path });
+        var guids = AssetDatabase.FindAssets("t:Sprite", new[] { path });
         if (guids.Length == 0) return;
 
         var folderName = Path.GetFileNameWithoutExtension(path);
@@ -92,5 +93,45 @@ public static class LocalEditorTool
     static bool ValidateSetFolderAB()
     {
         return Selection.activeObject && AssetDatabase.IsValidFolder(AssetDatabase.GetAssetPath(Selection.activeObject));
+    }
+
+    /// <summary>
+    /// 设置prefab的ab名和AssetBundleReference组件引用
+    /// ab名:父文件夹名/prefab名.u3d
+    /// ab名小写
+    /// </summary>
+    [MenuItem("Assets/SetPrefabAttribute")]
+    static void SetPrefabAttribute()
+    {
+        var obj = Selection.activeObject;
+        if (obj == null) return;
+
+        var path = AssetDatabase.GetAssetPath(obj);
+        var fileName = Path.GetFileNameWithoutExtension(path);
+        var folderName = Path.GetFileNameWithoutExtension(Path.GetDirectoryName(path));
+        // print("path, filename, foldername: ", path, fileName, folderName, obj);
+        var abName = $"{folderName}/{fileName}.u3d".ToLower();
+
+        var assetImporter = AssetImporter.GetAtPath(path);
+        assetImporter.assetBundleName = abName;
+        assetImporter.SaveAndReimport();
+
+        var go = obj as GameObject;
+        var abRef = go.GetComponent<AssetBundleReference>();
+        if (abRef == null)
+        {
+            abRef = go.AddComponent<AssetBundleReference>();
+            abRef.assetBundleName = abName;
+        } 
+
+        AssetDatabase.Refresh();
+    }
+
+    [MenuItem("Assets/SetPrefabAttribute", true)]
+    static bool ValidateSetPrefabAttribute()
+    {
+        // 确保是prefab
+        var obj = Selection.activeObject;
+        return obj != null && obj is GameObject && PrefabUtility.IsPartOfAnyPrefab(obj);
     }
 }
